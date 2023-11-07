@@ -1,0 +1,5 @@
+{
+    "sketch": "autorfid_write.ino",
+    "board": "arduino:avr:uno",
+    "port": "/dev/ttyACM6"
+}
