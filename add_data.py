@@ -3,6 +3,7 @@ import json
 import dotenv
 import requests
 import pandas as pd
+import random
 
 dotenv.load_dotenv(".env")
 
@@ -12,8 +13,8 @@ class doublequote_dictionary(dict):
 
 
 # HOST: str = "roundhouse.proxy.rlwy.net"
-HOST: str = "roundhouse.proxy.rlwy.net"
-PORT: int = 42552
+HOST: str = "localhost"
+PORT: int = 8080
 
 
 def clear():
@@ -53,6 +54,10 @@ def send_data(student_data) -> None:
     else:
         print("Request Failed!")
         print("Status Code: %s" % data.status_code)
+        
+        
+def genRand(val1, val2) -> int:
+    return random.randint(val1, val2)
 
 
 def main():
@@ -67,10 +72,14 @@ def main():
     None
     """
     clear()
-    section_id = 1 # Section ID of Casimiro Del Reosario
-    grade_level = 11 # Grade 11
-    data_set = pd.read_excel("id_info.xlsx")
+    # section_id = 1 # Section ID of Casimiro Del Reosario
+    # grade_level = 11 # Grade 11
+    data_set = pd.read_excel("Students.xlsx")
     for index, row in data_set.iterrows():
+        section_id = genRand(260, 282)
+        while (266 < section_id < 272):
+            section_id = genRand(260, 282)
+        grade_level = genRand(11, 12)
         last_name = row["LAST NAME"].title()
         first_name = row["FIRST NAME"].title()
         middle_initial = None if isinstance(row["MIDDLE INITIAL"], float) else row["MIDDLE INITIAL"]
@@ -79,7 +88,7 @@ def main():
         guardian_contact = row["CONTACT NUMBER OF GUARDIAN"]
         address = row["ADDRESS"].title()
         sex = row["SEX"].capitalize()
-        birthdate = str(row["BIRTH DATE(YYYY-MM-DD)"].date())
+        birthdate = str(row["BIRTH DATE(YYYY-MM-DD)"])
         request_data: dict = {
             "lrn": lrn,
             "firstName": first_name,
