@@ -1,21 +1,23 @@
 import os
+import asyncio
 import json
+import random
 import dotenv
 import requests
 import pandas as pd
-import random
+from websockets.client import connect
 
 dotenv.load_dotenv(".env")
 
-class doublequote_dictionary(dict):
+class DoubleQuoteDictionary(dict):
     def __str__(self):
         return json.dumps(self)
 
 
-# HOST: str = "roundhouse.proxy.rlwy.net"
-HOST: str = "localhost"
-PORT: int = 8080
-
+HOST: str = "roundhouse.proxy.rlwy.net"
+PORT: int = 42552
+# HOST: str = "localhost"
+# PORT: int = 8080
 
 def clear():
     """
@@ -37,7 +39,7 @@ def clear():
         os.system("clear")
         
 
-def send_data(student_data) -> None:
+async def send_data(student_data) -> bool:
     """
     Sends student data to the specified API endpoint.
     
@@ -48,19 +50,18 @@ def send_data(student_data) -> None:
         None: This function does not return anything.
     """
     session: requests.Session = requests.Session()
-    data = session.post(f"http://{HOST}:{PORT}/api/v1/student/create", json=student_data, auth=("teacher", 1234))
+    data = session.post(f"http://{HOST}:{PORT}/v1/student/create", json=student_data, auth=("teacher", 1234))
     if data.status_code == 200:
-        print("Request Success!")
+        return True
     else:
-        print("Request Failed!")
-        print("Status Code: %s" % data.status_code)
+        return False
         
         
-def genRand(val1, val2) -> int:
+async def generate_random(val1, val2) -> int:
     return random.randint(val1, val2)
 
 
-def main():
+async def main():
     """
     This function is the main entry point of the program.
     It reads data from an Excel file and sends the data to an API.
@@ -75,11 +76,12 @@ def main():
     # section_id = 1 # Section ID of Casimiro Del Reosario
     # grade_level = 11 # Grade 11
     data_set = pd.read_excel("Students.xlsx")
-    for index, row in data_set.iterrows():
-        section_id = genRand(260, 282)
-        while (266 < section_id < 272):
-            section_id = genRand(260, 282)
-        grade_level = genRand(11, 12)
+    ws = await connect(f"ws://esp32:1234@{HOST}:{PORT}/websocket/student")
+    for _, row in data_set.iterrows():
+        section_id = await generate_random(260, 282)
+        while 266 < section_id < 272:
+            section_id = await generate_random(260, 282)
+        grade_level = await generate_random(11, 12)
         last_name = row["LAST NAME"].title()
         first_name = row["FIRST NAME"].title()
         middle_initial = None if isinstance(row["MIDDLE INITIAL"], float) else row["MIDDLE INITIAL"]
@@ -110,10 +112,10 @@ def main():
             ],
             "address": address
         }
-        print("Sending the data of %s %s %s..." % (first_name, middle_initial, last_name))
-        print("Birthdate: %s" % birthdate)
-        send_data(doublequote_dictionary(request_data))
-
+        
+        await ws.send(str(json.dumps(request_data)))
+        print(f"\n{first_name} {middle_initial} {last_name}, {lrn} \n{await ws.recv()}")
+        
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
